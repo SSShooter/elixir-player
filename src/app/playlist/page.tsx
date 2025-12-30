@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { NavMenu } from "@/components/nav-menu"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -34,25 +34,41 @@ interface SongResult {
 
 export default function PlaylistPage() {
   const router = useRouter()
-  const [playlistId, setPlaylistId] = useState("")
-  const [provider, setProvider] = useState<Provider>("tencent")
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+
+  const [playlistId, setPlaylistId] = useState(searchParams.get("id") || "")
+  const [provider, setProvider] = useState<Provider>((searchParams.get("provider") as Provider) || "tencent")
   const [results, setResults] = useState<SongResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  async function handleLookup() {
-    if (!playlistId) return
+  // Effect to fetch data when URL params change
+  useEffect(() => {
+    const id = searchParams.get("id")
+    const prov = (searchParams.get("provider") as Provider) || "tencent"
+
+    // Sync input state
+    if (id && id !== playlistId) setPlaylistId(id)
+    if (prov && prov !== provider) setProvider(prov)
+
+    if (id) {
+      doLookup(id, prov)
+    }
+  }, [searchParams])
+
+  async function doLookup(id: string, prov: Provider) {
     setLoading(true)
     setError("")
-    setResults([])
+    // setResults([])
 
     try {
       const res = await fetch("/api/playlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider,
-          value: playlistId,
+          provider: prov,
+          value: id,
         }),
       })
       if (!res.ok) throw new Error("Playlist lookup failed")
@@ -68,6 +84,14 @@ export default function PlaylistPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleLookup() {
+    if (!playlistId) return
+    const params = new URLSearchParams(searchParams)
+    params.set("id", playlistId)
+    params.set("provider", provider)
+    router.push(`${pathname}?${params.toString()}`)
   }
 
   function handleSelect(minfo: SongResult) {
@@ -143,6 +167,13 @@ export default function PlaylistPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-zinc-500 h-24">
+                    加载中...
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

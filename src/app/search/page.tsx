@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { NavMenu } from "@/components/nav-menu"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -35,25 +35,51 @@ interface SongResult {
 
 export default function SearchPage() {
   const router = useRouter()
-  const [keyword, setKeyword] = useState("")
-  const [provider, setProvider] = useState<Provider>("tencent")
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  
+  const [keyword, setKeyword] = useState(searchParams.get("keyword") || "")
+  const [provider, setProvider] = useState<Provider>((searchParams.get("provider") as Provider) || "tencent")
   const [results, setResults] = useState<SongResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  async function handleSearch() {
-    if (!keyword) return
+  // Sync state with URL params on change (e.g. back button)
+  // We prefer the URL params to be the source of truth for the inputs when they change
+  // allowing the user to see what they are searching for if they arrive via link
+  // However, we also want the input to be editable without constantly resetting if we typed but didn't search.
+  // Actually, usually inputs are uncontrolled or loose specific sync. 
+  // But if we hit back, we want the input to revert.
+  // Simple approach: Sync on mount and param change.
+  // Warning: If I type "A" and params are "B", typing triggers state change. 
+  // If I don't push, params stay "B". Pass.
+  
+  // Effect to fetch data when URL params change
+  useEffect(() => {
+    const kw = searchParams.get("keyword")
+    const prov = (searchParams.get("provider") as Provider) || "tencent"
+    
+    // Update local state to match URL (useful for back button)
+    if (kw && kw !== keyword) setKeyword(kw)
+    if (prov && prov !== provider) setProvider(prov)
+
+    if (kw) {
+      doSearch(kw, prov)
+    }
+  }, [searchParams])
+
+  async function doSearch(kw: string, prov: Provider) {
     setLoading(true)
     setError("")
-    setResults([])
+    // setResults([]) // Keep previous results while loading
 
     try {
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider,
-          keyword,
+          provider: prov,
+          keyword: kw,
           page: 1,
           limit: 30,
         }),
@@ -71,6 +97,14 @@ export default function SearchPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleSearch() {
+    if (!keyword) return
+    const params = new URLSearchParams(searchParams)
+    params.set("keyword", keyword)
+    params.set("provider", provider)
+    router.push(`${pathname}?${params.toString()}`)
   }
 
   function handleSelect(minfo: SongResult) {
@@ -149,6 +183,13 @@ export default function SearchPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-zinc-500 h-24">
+                    加载中...
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
