@@ -25,6 +25,11 @@ export function NavMenu() {
           播放器
         </Button>
       </Link>
+      <Link href="/ai-config">
+        <Button variant={pathname === "/ai-config" ? "default" : "secondary"} size="sm">
+          AI 配置
+        </Button>
+      </Link>
     </div>
   )
 }

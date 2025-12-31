@@ -1,19 +1,24 @@
 "use client"
-import { useEffect, useMemo, useState, useRef, Suspense } from "react"
+import { useEffect, useState, useRef, Suspense, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { PageHeader } from "@/components/page-header"
 
 import LyricsRenderer from "@/components/lyrics-renderer"
-import AIConfig from "@/components/ai-config"
 import { parseLrc, type Lyrics } from "@/lib/lyrics"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import remarkCjkFriendly from "remark-cjk-friendly"
 import { analyzePrompt } from "@/prompts/analyze"
+import { languageLearningPrompt } from "@/prompts/language-learning"
+import { AIAnalysis } from "@/components/ai-analysis"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { NavMenu } from "@/components/nav-menu"
 import { Provider } from "@/components/provider-selector"
 import { useLyrics } from "@/hooks/use-api"
 import { Player, type PlayerRef } from "@/components/player"
+
+function formatTime(t: number) {
+  const m = Math.floor(t / 60)
+  const s = Math.floor(t % 60)
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+}
 
 function HomeContent() {
   const searchParams = useSearchParams()
@@ -21,20 +26,10 @@ function HomeContent() {
   
   const [provider, setProvider] = useState<Provider>("tencent")
   const [inputValue, setInputValue] = useState("")
-  // const [lyrics, setLyrics] = useState<Lyrics | null>(null) // Now derived
-  // const [lyricError, setLyricError] = useState<string>("") // Now derived
-  const [analysis, setAnalysis] = useState("")
-  const [reasoning, setReasoning] = useState("")
+  const [currentTime, setCurrentTime] = useState(0)
   const [baseUrl, setBaseUrl] = useState("")
   const [apiKey, setApiKey] = useState("")
   const [model, setModel] = useState("gpt-4o-mini")
-  // const [loading, setLoading] = useState(false) // Now derived
-  const [aLoading, setALoading] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  // const [coverUrl, setCoverUrl] = useState("") // Now derived
-  // const [songInfo, setSongInfo] = useState<{ name: string; artist: string[]; album: string } | null>(null) // Now derived
-  const [showReasoning, setShowReasoning] = useState(false)
-  const analysisInProgressRef = useRef(false)
   const playerRef = useRef<PlayerRef>(null)
 
   // URL Params -> Hook Params
@@ -66,7 +61,7 @@ function HomeContent() {
     if (urlId) setInputValue(urlId)
   }, [urlProvider, urlId])
 
-
+  // Load AI settings from localStorage
   useEffect(() => {
     const u = localStorage.getItem("ai_base_url")
     const k = localStorage.getItem("ai_api_key")
@@ -76,33 +71,7 @@ function HomeContent() {
     if (m) setModel(m)
   }, [])
 
-  useEffect(() => {
-    if (lyrics && inputValue) {
-        // Note: using inputValue here might be slightly off if user changed input but didn't fetch.
-        // Better to use urlId if that's what fetched the lyrics.
-        // But original used simple 'inputValue'.
-        // Let's stick to 'urlId' if available for cache key to be consistent with data
-        const idToUse = urlId || inputValue
-        const provToUse = urlProvider || provider
 
-        const cacheKey = `analysis_${provToUse}_${idToUse}_${model}`
-        const cachedAnalysis = localStorage.getItem(cacheKey)
-        if (cachedAnalysis) {
-          const parsed = JSON.parse(cachedAnalysis)
-          setAnalysis(parsed.analysis || "")
-          setReasoning(parsed.reasoning || "")
-        } else {
-          setAnalysis("")
-          setReasoning("")
-        }
-      }
-  }, [model, provider, lyrics, inputValue, urlId, urlProvider])
-
-  useEffect(() => {
-    if (!analysisInProgressRef.current && reasoning) {
-      setShowReasoning(false)
-    }
-  }, [reasoning])
 
   const plainText = useMemo(() => {
     if (!lyrics) return ""
@@ -112,11 +81,6 @@ function HomeContent() {
     }).join("\n")
   }, [lyrics])
 
-  function formatTime(t: number) {
-    const m = Math.floor(t / 60)
-    const s = Math.floor(t % 60)
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
-  }
 
   // Wrapped fetchLyrics is no longer needed as a standalone async function for data fetching
   // But we need a handler for the "Get Lyrics" button
@@ -129,93 +93,6 @@ function HomeContent() {
     router.push(`/?${params.toString()}`)
   }
 
-  async function analyze() {
-    if (!lyrics) return
-    setALoading(true)
-    analysisInProgressRef.current = true
-    setAnalysis("")
-    setReasoning("")
-    try {
-      const defaultPrompt = "你是一位资深乐评人"
-      const messages = [
-        { role: "system", content: defaultPrompt },
-        { role: "user", content: analyzePrompt(plainText, songInfo?.name, songInfo?.artist?.join(" / ")) },
-      ]
-      
-      const res = await fetch(baseUrl + "/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          model, 
-          messages,
-          stream: true 
-        }),
-      })
-      
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || "analyze_failed")
-      }
-      
-      const reader = res.body?.getReader()
-      const decoder = new TextDecoder()
-      let fullContent = ""
-      let fullReasoning = ""
-      
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n')
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data === '[DONE]') continue
-              
-              try {
-                const parsed = JSON.parse(data)
-                const content = parsed.choices?.[0]?.delta?.content
-                const reasoning = parsed.choices?.[0]?.delta?.reasoning_content || parsed.choices?.[0]?.delta?.reasoning
-                if (content) {
-                  fullContent += content
-                  setAnalysis(fullContent)
-                }
-                if (reasoning) {
-                  fullReasoning += reasoning
-                  setReasoning(fullReasoning)
-                }
-              } catch {
-              }
-            }
-          }
-        }
-      }
-      
-      const idToUse = urlId || inputValue
-      const provToUse = urlProvider || provider
-      const cacheKey = `analysis_${provToUse}_${idToUse}_${model}`
-      const cacheData = JSON.stringify({ analysis: fullContent, reasoning: fullReasoning })
-      localStorage.setItem(cacheKey, cacheData)
-    } catch {
-      setAnalysis("")
-      setReasoning("")
-    } finally {
-      setALoading(false)
-      analysisInProgressRef.current = false
-    }
-  }
-
-  function saveSettings() {
-    localStorage.setItem("ai_base_url", baseUrl)
-    localStorage.setItem("ai_api_key", apiKey)
-    localStorage.setItem("ai_model", model)
-  }
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -229,7 +106,7 @@ function HomeContent() {
           inputValue={inputValue}
           setInputValue={setInputValue}
           placeholder="输入歌曲链接或 ID..."
-          actionLabel="获取歌词"
+          actionLabel="加载歌曲"
           onAction={handleFetchLyrics}
           loading={loading}
         />
@@ -253,59 +130,52 @@ function HomeContent() {
               <LyricsRenderer 
                 lyrics={lyrics} 
                 currentTime={currentTime} 
-                showTimestamp={true} 
+                showTimestamp={false} 
                 coverUrl={coverUrl}
                 onSeek={(time) => playerRef.current?.seek(time)}
               />
             </div>
             <div>
-              <h2 className="text-lg font-medium mb-2">AI 赏析</h2>
-              <div className="space-y-2">
-                <AIConfig
-                  baseUrl={baseUrl}
-                  apiKey={apiKey}
-                  model={model}
-                  onBaseUrlChange={setBaseUrl}
-                  onApiKeyChange={setApiKey}
-                  onModelChange={setModel}
-                  onSave={saveSettings}
-                  onAnalyze={analyze}
-                  loading={aLoading}
-                />
-                {reasoning && (
-                  <div className="border rounded-md bg-amber-50 dark:bg-amber-950/30">
-                    <button 
-                      onClick={() => setShowReasoning(!showReasoning)}
-                      className="w-full flex items-center justify-between p-4 text-left hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
-                    >
-                      <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">思考过程</h3>
-                      <span className="text-amber-800 dark:text-amber-300">
-                        {showReasoning ? "▼" : "▶"}
-                      </span>
-                    </button>
-                    {showReasoning && (
-                      <div className="px-4 pb-4 prose prose-zinc dark:prose-invert max-w-none">
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkGfm, remarkCjkFriendly]} 
-                        >
-                          {reasoning}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="min-h-40 p-4 border rounded-md bg-white dark:bg-zinc-950 prose prose-zinc dark:prose-invert max-w-none">
-                  {analysis ? (
-                    <ReactMarkdown 
-                      remarkPlugins={[remarkGfm, remarkCjkFriendly]} 
-                    >
-                      {analysis}
-                    </ReactMarkdown>
-                  ) : (
-                    <p className="text-zinc-500 dark:text-zinc-400">将在此显示 AI 赏析</p>
-                  )}
-                </div>
-              </div>
+              <Tabs defaultValue="appreciation" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="appreciation">AI 赏析</TabsTrigger>
+                  <TabsTrigger value="learning">语言学习</TabsTrigger>
+                </TabsList>
+                <TabsContent value="appreciation" className="mt-4">
+                  <AIAnalysis
+                    lyrics={lyrics}
+                    plainText={plainText}
+                    songInfo={songInfo}
+                    urlId={urlId || inputValue}
+                    urlProvider={urlProvider || provider}
+                    provider={provider}
+                    model={model}
+                    baseUrl={baseUrl}
+                    apiKey={apiKey}
+                    title="音乐赏析"
+                    promptGenerator={analyzePrompt}
+                    cacheKeyPrefix="analysis"
+                    systemPrompt="你是一位资深乐评人"
+                  />
+                </TabsContent>
+                <TabsContent value="learning" className="mt-4">
+                  <AIAnalysis
+                    lyrics={lyrics}
+                    plainText={plainText}
+                    songInfo={songInfo}
+                    urlId={urlId || inputValue}
+                    urlProvider={urlProvider || provider}
+                    provider={provider}
+                    model={model}
+                    baseUrl={baseUrl}
+                    apiKey={apiKey}
+                    title="语言学习分析"
+                    promptGenerator={languageLearningPrompt}
+                    cacheKeyPrefix="language_learning"
+                    systemPrompt="你是一位资深的语言学习专家"
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         )}

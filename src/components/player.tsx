@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { Provider } from "@/components/provider-selector";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Loader2, Volume2, VolumeX } from "lucide-react";
+import { Play, Pause, Loader2, Volume2, VolumeX, Download } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
 interface PlayerProps {
@@ -31,6 +31,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps & { onTimeUpdate?: (time
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -152,6 +153,32 @@ export const Player = forwardRef<PlayerRef, PlayerProps & { onTimeUpdate?: (time
        setVolume(newVolume);
        if (newVolume === 0) setIsMuted(true);
        else if (isMuted) setIsMuted(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!audioUrl) return;
+    
+    setIsDownloading(true);
+    try {
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${songInfo.name} - ${songInfo.artist.join(', ')}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up the blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch (err) {
+      console.error('Download failed:', err);
+      setError('下载失败');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -284,7 +311,20 @@ export const Player = forwardRef<PlayerRef, PlayerProps & { onTimeUpdate?: (time
                </div>
 
                 <div className="w-32 flex justify-end">
-                    {/* Placeholder for future buttons */}
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 rounded-full"
+                        onClick={handleDownload}
+                        disabled={!audioUrl || isDownloading}
+                        title="下载"
+                    >
+                        {isDownloading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="h-4 w-4"/>
+                        )}
+                    </Button>
                 </div>
            </div>
         </div>

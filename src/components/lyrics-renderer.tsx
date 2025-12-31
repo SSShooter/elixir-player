@@ -137,7 +137,7 @@ export default function LyricsRenderer({
                       </span>
                     )}
                     <div className="flex flex-col gap-1 w-full">
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center justify-center gap-4">
                         <p className={cn(
                           "text-lg font-medium leading-tight tracking-tight transition-colors",
                            isActive ? "text-white scale-100" : "text-white/80"
@@ -148,7 +148,7 @@ export default function LyricsRenderer({
                       
                       {showTranslation && line.translation && (
                         <p className={cn(
-                          "text-sm transition-colors mt-1 leading-relaxed",
+                          "text-sm text-center transition-colors mt-1 leading-relaxed",
                           isActive ? "text-white/60" : "text-white/40"
                         )}>
                           {line.translation}
