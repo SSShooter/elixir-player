@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { NavMenu } from "@/components/nav-menu"
 import { PageHeader } from "@/components/page-header"
@@ -16,30 +16,22 @@ import {
 import { Provider } from "@/components/provider-selector"
 import { useSearchSongs, type SongResult } from "@/hooks/use-api"
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
   
+  // Local state for input fields only
   const [keyword, setKeyword] = useState(searchParams.get("keyword") || "")
   const [provider, setProvider] = useState<Provider>((searchParams.get("provider") as Provider) || "tencent")
 
-  // Use the custom hook
+  // Use the custom hook with URL params
   // We need to pass the *search params* keyword to the hook, not the input state, 
   // because we only want to search when URL changes (user pressed search).
   const urlKeyword = searchParams.get("keyword") || ""
   const urlProvider = (searchParams.get("provider") as Provider) || "tencent"
 
   const { data: results = [], isLoading: loading, error } = useSearchSongs(urlKeyword, urlProvider)
-
-  // Effect to sync local state with URL params
-  useEffect(() => {
-    const kw = searchParams.get("keyword")
-    const prov = (searchParams.get("provider") as Provider) || "tencent"
-    
-    if (kw) setKeyword(kw)
-    if (prov) setProvider(prov)
-  }, [searchParams])
 
   function handleSearch() {
     if (!keyword) return
@@ -117,5 +109,17 @@ export default function SearchPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+        <div className="text-zinc-500">加载中...</div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   )
 }

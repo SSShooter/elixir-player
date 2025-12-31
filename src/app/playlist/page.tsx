@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { NavMenu } from "@/components/nav-menu"
 import { PageHeader } from "@/components/page-header"
@@ -16,28 +16,20 @@ import {
 import { Provider } from "@/components/provider-selector"
 import { usePlaylistSongs, type SongResult } from "@/hooks/use-api"
 
-export default function PlaylistPage() {
+function PlaylistContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
 
+  // Local state for input fields only
   const [playlistId, setPlaylistId] = useState(searchParams.get("id") || "")
   const [provider, setProvider] = useState<Provider>((searchParams.get("provider") as Provider) || "tencent")
 
-  // Use the custom hook
+  // Use the custom hook with URL params
   const urlId = searchParams.get("id") || ""
   const urlProvider = (searchParams.get("provider") as Provider) || "tencent"
 
   const { data: results = [], isLoading: loading, error } = usePlaylistSongs(urlId, urlProvider)
-
-  // Effect to sync local state with URL
-  useEffect(() => {
-    const id = searchParams.get("id")
-    const prov = (searchParams.get("provider") as Provider) || "tencent"
-
-    if (id) setPlaylistId(id)
-    if (prov) setProvider(prov)
-  }, [searchParams])
 
   function handleLookup() {
     if (!playlistId) return
@@ -114,5 +106,17 @@ export default function PlaylistPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function PlaylistPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+        <div className="text-zinc-500">加载中...</div>
+      </div>
+    }>
+      <PlaylistContent />
+    </Suspense>
   )
 }
