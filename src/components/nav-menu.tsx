@@ -27,7 +27,7 @@ export function NavMenu() {
       </Link>
       <Link href="/ai-config">
         <Button variant={pathname === "/ai-config" ? "default" : "secondary"} size="sm">
-          AI 配置
+          设置
         </Button>
       </Link>
     </div>

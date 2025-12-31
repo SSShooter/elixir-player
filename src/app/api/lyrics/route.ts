@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import Meting from "@/meting/meting.js";
+import { getMetingCookie } from "@/lib/cookie-helper";
 
 const BodySchema = z.object({
   provider: z.enum(["netease", "tencent", "kugou", "baidu", "kuwo"]),
   source: z.enum(["url", "id"]),
   value: z.string().min(1),
+  cookie: z.string().optional(),
 });
 
 type Provider = z.infer<typeof BodySchema>["provider"];
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  const { provider, source, value } = parsed.data;
+  const { provider, source, value, cookie } = parsed.data;
 
   const id = source === "id" ? value : parseIdFromUrl(provider, value);
   if (!id) {
@@ -53,8 +55,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const meting = new Meting(provider);
-    if (process.env.METING_COOKIE) {
-      meting.cookie(process.env.METING_COOKIE);
+    const metingCookie = getMetingCookie(provider, cookie);
+    if (metingCookie) {
+      meting.cookie(metingCookie);
     }
     meting.format(true);
     const result = await meting.lyric(id);

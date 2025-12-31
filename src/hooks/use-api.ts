@@ -28,6 +28,13 @@ interface LyricsData {
 
 // --- Fetcher Functions ---
 
+function getUserCookie(provider: Provider): string | undefined {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem(`meting_cookie_${provider}`) || undefined;
+  }
+  return undefined;
+}
+
 async function fetchSearch(
   keyword: string,
   provider: Provider,
@@ -42,6 +49,7 @@ async function fetchSearch(
       keyword,
       page,
       limit,
+      cookie: getUserCookie(provider),
     }),
   });
   if (!res.ok) throw new Error("Search failed");
@@ -59,6 +67,7 @@ async function fetchPlaylist(
     body: JSON.stringify({
       provider,
       value: id,
+      cookie: getUserCookie(provider),
     }),
   });
   if (!res.ok) throw new Error("Playlist lookup failed");
@@ -75,7 +84,12 @@ async function fetchLyrics(
   const res = await fetch("/api/lyrics", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, source, value }),
+    body: JSON.stringify({
+      provider,
+      source,
+      value,
+      cookie: getUserCookie(provider),
+    }),
   });
   const data = await res.json();
   if (!res.ok) {

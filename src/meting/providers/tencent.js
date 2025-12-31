@@ -165,8 +165,8 @@ export default class TencentProvider extends BaseProvider {
       id: data.mid,
       name: data.name,
       artist: [],
-      album: data.album.title.trim(),
-      pic_id: data.album.mid,
+      album: data.album?.title?.trim(),
+      pic_id: data.album?.mid,
       url_id: data.mid,
       lyric_id: data.mid,
       source: 'tencent'

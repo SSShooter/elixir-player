@@ -1,10 +1,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import Meting from "@/meting/meting.js";
+import { getMetingCookie } from "@/lib/cookie-helper";
 
 const BodySchema = z.object({
   provider: z.enum(["netease", "tencent", "kugou", "baidu", "kuwo"]),
   value: z.string().min(1), // can be ID or URL
+  cookie: z.string().optional(),
 });
 
 type Provider = z.infer<typeof BodySchema>["provider"];
@@ -52,12 +54,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { provider, value } = parsed.data;
+    const { provider, value, cookie } = parsed.data;
     const id = parseIdFromUrl(provider, value);
 
     const meting = new Meting(provider);
-    if (process.env.METING_COOKIE) {
-      meting.cookie(process.env.METING_COOKIE);
+    const metingCookie = getMetingCookie(provider, cookie);
+    if (metingCookie) {
+      meting.cookie(metingCookie);
     }
     meting.format(true);
 

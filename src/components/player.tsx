@@ -67,10 +67,11 @@ export const Player = forwardRef<PlayerRef, PlayerProps & { onTimeUpdate?: (time
       setDuration(0);
       
       try {
+        const cookie = typeof window !== 'undefined' ? localStorage.getItem(`meting_cookie_${provider}`) || undefined : undefined;
         const res = await fetch("/api/url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ provider, id }),
+          body: JSON.stringify({ provider, id, cookie }),
         });
         
         if (!res.ok) {
