@@ -9,6 +9,7 @@ export interface SongResult {
   album: string;
   url_id?: string | number;
   pic_id?: string | number;
+  cover_url?: string;
 }
 
 // Re-export specific song info structure used in page.tsx if needed

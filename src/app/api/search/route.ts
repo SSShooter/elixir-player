@@ -36,6 +36,10 @@ export async function POST(req: NextRequest) {
 
     try {
       const data = JSON.parse(result);
+      // Debug log to check if cover_url is present
+      if (data && data.length > 0) {
+        console.log('[API Debug] First result item:', JSON.stringify(data[0], null, 2));
+      }
       return Response.json(data);
     } catch (parseError) {
       console.error(`[search API] JSON parse error:`, parseError);

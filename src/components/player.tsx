@@ -196,7 +196,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps & { onTimeUpdate?: (time
         {/* Background Blur Effect */}
         <div
           className="absolute inset-0 opacity-40 bg-cover bg-center blur-2xl transform scale-125 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-50"
-          style={{ backgroundImage: `url(${coverUrl || "/placeholder.png"})` }}
+          style={{ backgroundImage: `url(${coverUrl || "/placeholder.svg"})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30" />
 
@@ -206,7 +206,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps & { onTimeUpdate?: (time
             <div className="relative shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={coverUrl || "/placeholder.png"}
+                src={coverUrl || "/placeholder.svg"}
                 alt="专辑封面"
                 className={`w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl shadow-2xl ring-1 ring-white/10 transition-transform duration-500 ease-out ${isPlaying ? 'scale-105' : 'scale-100'}`}
               />

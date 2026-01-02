@@ -22,21 +22,21 @@ export default function LyricsRenderer({
 }) {
   const [showTranslation, setShowTranslation] = useState(true)
   const [isAutoScroll, setIsAutoScroll] = useState(true)
-  
+
   const activeRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  
+
   // Refactored scroll function
   const scrollToActive = useCallback(() => {
     if (activeRef.current && scrollContainerRef.current) {
       const container = scrollContainerRef.current
       const element = activeRef.current
-      
+
       const containerRect = container.getBoundingClientRect()
       const elementRect = element.getBoundingClientRect()
-      
+
       const offset = elementRect.top - containerRect.top - (containerRect.height / 2) + (elementRect.height / 2)
-      
+
       container.scrollTo({
         top: container.scrollTop + offset,
         behavior: "smooth"
@@ -78,10 +78,10 @@ export default function LyricsRenderer({
 
   return (
     <div className="group relative overflow-hidden rounded-2xl shadow-xl bg-zinc-900 border border-white/10 h-[500px] md:h-[600px] lg:h-[650px]">
-       {/* Background Blur Effect - Matching Player */}
-      <div 
+      {/* Background Blur Effect - Matching Player */}
+      <div
         className="absolute inset-0 opacity-20 bg-cover bg-center blur-2xl transform scale-125 pointer-events-none"
-        style={{ backgroundImage: `url(${coverUrl || "/placeholder.png"})` }}
+        style={{ backgroundImage: `url(${coverUrl || "/placeholder.svg"})` }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30 pointer-events-none" />
 
@@ -92,17 +92,17 @@ export default function LyricsRenderer({
         </h2>
         <div className="flex items-center gap-3">
           <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Translation</span>
-          <Switch 
-            checked={showTranslation} 
+          <Switch
+            checked={showTranslation}
             onCheckedChange={setShowTranslation}
-            className="data-[state=checked]:bg-white data-[state=unchecked]:bg-white/20" 
+            className="data-[state=checked]:bg-white data-[state=unchecked]:bg-white/20"
           />
         </div>
       </div>
 
       {/* Scrollable Area */}
       <ScrollArea ref={scrollContainerRef} className="relative z-10 h-[calc(100%-65px)] bg-transparent">
-        <div 
+        <div
           className="flex flex-col py-10 px-4 md:px-6 pb-32"
           onWheel={handleUserInteraction}
           onTouchStart={handleUserInteraction}
@@ -140,12 +140,12 @@ export default function LyricsRenderer({
                       <div className="flex items-center justify-center gap-4">
                         <p className={cn(
                           "text-lg font-medium leading-tight tracking-tight transition-colors",
-                           isActive ? "text-white scale-100" : "text-white/80"
+                          isActive ? "text-white scale-100" : "text-white/80"
                         )}>
                           {line.text || "♪"}
                         </p>
                       </div>
-                      
+
                       {showTranslation && line.translation && (
                         <p className={cn(
                           "text-sm text-center transition-colors mt-1 leading-relaxed",
@@ -166,15 +166,15 @@ export default function LyricsRenderer({
       {/* Resume Auto-Scroll Button */}
       {!isAutoScroll && (
         <div className="absolute bottom-6 right-6 z-20 animate-in fade-in slide-in-from-bottom-2">
-            <Button 
-                size="sm" 
-                variant="secondary"
-                onClick={scrollToCurrent}
-                className="rounded-full shadow-lg bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10"
-            >
-                <ChevronDown className="w-3 h-3 mr-1.5" />
-                Resume
-            </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={scrollToCurrent}
+            className="rounded-full shadow-lg bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10"
+          >
+            <ChevronDown className="w-3 h-3 mr-1.5" />
+            Resume
+          </Button>
         </div>
       )}
     </div>

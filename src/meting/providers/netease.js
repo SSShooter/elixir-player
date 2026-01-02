@@ -179,18 +179,22 @@ export default class NeteaseProvider extends BaseProvider {
       lyric_id: data.id,
       source: 'netease'
     };
-    
+
     if (data.al.picUrl) {
       const match = data.al.picUrl.match(/\/(\d+)\./);
       if (match) {
         result.pic_id = match[1];
       }
     }
-    
+
     data.ar.forEach(artist => {
       result.artist.push(artist.name);
     });
-    
+
+    if (result.pic_id) {
+      result.cover_url = `https://p3.music.126.net/${this._encryptId(result.pic_id)}/${result.pic_id}.jpg?param=300y300`;
+    }
+
     return result;
   }
 
@@ -239,11 +243,11 @@ export default class NeteaseProvider extends BaseProvider {
   urlDecode(result) {
     const data = JSON.parse(result);
     let url;
-    
+
     if (data.data[0].uf && data.data[0].uf.url) {
       data.data[0].url = data.data[0].uf.url;
     }
-    
+
     if (data.data[0].url) {
       url = {
         url: data.data[0].url,
@@ -257,7 +261,7 @@ export default class NeteaseProvider extends BaseProvider {
         br: -1
       };
     }
-    
+
     return JSON.stringify(url);
   }
 
@@ -270,7 +274,7 @@ export default class NeteaseProvider extends BaseProvider {
       lyric: (data.lrc && data.lrc.lyric) ? data.lrc.lyric : '',
       tlyric: (data.tlyric && data.tlyric.lyric) ? data.tlyric.lyric : ''
     };
-    
+
     return JSON.stringify(lyricData);
   }
 
@@ -283,7 +287,7 @@ export default class NeteaseProvider extends BaseProvider {
     const min = 1884815360; // 112.74.200.0
     const max = 1884890111; // 112.74.243.255
     const randomInt = Math.floor(Math.random() * (max - min + 1)) + min;
-    
+
     return [
       (randomInt >>> 24) & 0xFF,
       (randomInt >>> 16) & 0xFF,
@@ -317,19 +321,19 @@ export default class NeteaseProvider extends BaseProvider {
   _encryptId(id) {
     const magic = '3go8&$8*3*3h0k(2)2'.split('');
     const song_id = String(id).split('');
-    
+
     for (let i = 0; i < song_id.length; i++) {
       song_id[i] = String.fromCharCode(
         song_id[i].charCodeAt(0) ^ magic[i % magic.length].charCodeAt(0)
       );
     }
-    
+
     const result = crypto.createHash('md5')
       .update(song_id.join(''), 'binary')
       .digest('base64')
       .replace(/\//g, '_')
       .replace(/\+/g, '-');
-    
+
     return result;
   }
 

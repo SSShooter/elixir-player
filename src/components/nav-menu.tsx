@@ -20,6 +20,11 @@ export function NavMenu() {
           歌单查找
         </Button>
       </Link>
+      <Link href="/share">
+        <Button variant={pathname === "/share" ? "default" : "secondary"} size="sm">
+          歌单分享
+        </Button>
+      </Link>
       <Link href="/">
         <Button variant={pathname === "/" ? "default" : "secondary"} size="sm">
           播放器

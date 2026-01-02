@@ -160,7 +160,7 @@ export default class TencentProvider extends BaseProvider {
     if (data.musicData) {
       data = data.musicData;
     }
-    
+
     const result = {
       id: data.mid,
       name: data.name,
@@ -171,11 +171,15 @@ export default class TencentProvider extends BaseProvider {
       lyric_id: data.mid,
       source: 'tencent'
     };
-    
+
     data.singer.forEach(singer => {
       result.artist.push(singer.name);
     });
-    
+
+    if (result.pic_id) {
+      result.cover_url = `https://y.gtimg.cn/music/photo_new/T002R300x300M000${result.pic_id}.jpg?max_age=2592000`;
+    }
+
     return result;
   }
 
@@ -197,7 +201,7 @@ export default class TencentProvider extends BaseProvider {
   async urlDecode(result) {
     const data = JSON.parse(result);
     const guid = Math.floor(Math.random() * 10000000000);
-    
+
     const qualityMap = [
       ['size_flac', 999, 'F000', 'flac'],
       ['size_320mp3', 320, 'M800', 'mp3'],
@@ -207,13 +211,13 @@ export default class TencentProvider extends BaseProvider {
       ['size_48aac', 48, 'C200', 'm4a'],
       ['size_24aac', 24, 'C100', 'm4a']
     ];
-    
+
     let uin = '0';
     const uinMatch = this.meting.header.Cookie && this.meting.header.Cookie.match(/uin=(\d+)/);
     if (uinMatch) {
       uin = uinMatch[1];
     }
-    
+
     const payload = {
       req_0: {
         module: 'vkey.GetVkeyServer',
@@ -229,13 +233,13 @@ export default class TencentProvider extends BaseProvider {
         }
       }
     };
-    
+
     qualityMap.forEach(([sizeKey, br, prefix, ext]) => {
       payload.req_0.param.songmid.push(data.data[0].mid);
       payload.req_0.param.filename.push(`${prefix}${data.data[0].file.media_mid}.${ext}`);
       payload.req_0.param.songtype.push(data.data[0].type);
     });
-    
+
     const api = {
       method: 'GET',
       url: 'https://u.y.qq.com/cgi-bin/musicu.fcg',
@@ -246,10 +250,10 @@ export default class TencentProvider extends BaseProvider {
         data: JSON.stringify(payload)
       }
     };
-    
+
     const response = JSON.parse(await this.meting._exec(api));
     const vkeys = response.req_0.data.midurlinfo;
-    
+
     let url;
     for (let i = 0; i < qualityMap.length; i++) {
       const [sizeKey, br, prefix, ext] = qualityMap[i];
@@ -264,7 +268,7 @@ export default class TencentProvider extends BaseProvider {
         }
       }
     }
-    
+
     if (!url) {
       url = {
         url: '',
@@ -272,7 +276,7 @@ export default class TencentProvider extends BaseProvider {
         br: -1
       };
     }
-    
+
     return JSON.stringify(url);
   }
 

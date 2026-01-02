@@ -53,7 +53,11 @@ function HomeContent() {
   }, [lyricsData])
 
   const coverUrl = lyricsData?.coverUrl || ""
-  const songInfo = lyricsData?.songInfo || null
+  const songInfo = lyricsData?.songInfo || {
+    name: '',
+    artist: [],
+    album: ''
+  }
 
   // Sync local state with URL params
   useEffect(() => {
@@ -118,16 +122,16 @@ function HomeContent() {
           {lyrics && (
             <div className="grid grid-cols-1 gap-6 mt-6">
               <div className="space-y-4">
-                {coverUrl && songInfo && (
-                  <Player
-                    ref={playerRef}
-                    id={urlId || inputValue}
-                    provider={provider}
-                    coverUrl={coverUrl}
-                    songInfo={songInfo}
-                    onTimeUpdate={setCurrentTime}
-                  />
-                )}
+                {/* {coverUrl && songInfo && ( */}
+                <Player
+                  ref={playerRef}
+                  id={urlId || inputValue}
+                  provider={provider}
+                  coverUrl={coverUrl}
+                  songInfo={songInfo}
+                  onTimeUpdate={setCurrentTime}
+                />
+                {/* )} */}
                 <LyricsRenderer
                   lyrics={lyrics}
                   currentTime={currentTime}
