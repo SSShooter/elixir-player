@@ -9,6 +9,20 @@ A modern music player web application built with Next.js, featuring AI-powered l
 - **Dynamic Song Cards**: Generate and share beautiful cards or embed them in your website.
 - **Playlist Management**: Easily import and explore tracks from external playlist links.
 
+## Song Card
+
+```html
+<iframe height="83px" width="100%" src="https://elixia-player.koyeb.app/embed/tencent/001ATfEL0kn2NA"></iframe>
+<iframe height="83px" width="100%" src="https://elixia-player.koyeb.app/card?url=https://music.163.com/song?id=610149"></iframe>
+<iframe height="83px" width="100%" src="https://elixia-player.koyeb.app/card/netease/610149"></iframe>
+```
+
+### Image
+
+```html
+<img src="https://elixia-player.koyeb.app/card/tencent/001ATfEL0kn2NA/image" />
+```
+
 ## Getting Started
 
 First, run the development server:

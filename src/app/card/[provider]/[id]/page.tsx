@@ -14,36 +14,25 @@ export default function CardPage() {
     // We use useLyrics to get coverUrl and songInfo
     const { data: lyricsData, isLoading, error } = useLyrics(id, provider);
 
-    if (isLoading) {
+    if (isLoading || error || !lyricsData) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-transparent p-0">
-                <div className="w-full mx-auto aspect-[4/1] md:aspect-[5/1] rounded-xl bg-zinc-900 border border-white/10 shadow-xl overflow-hidden relative">
-                    <div className="p-3 flex items-center gap-4 h-20 md:h-24">
-                        <Skeleton className="shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-lg bg-zinc-800" />
-                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
-                            <Skeleton className="h-4 w-3/4 bg-zinc-800" />
-                            <Skeleton className="h-3 w-1/2 bg-zinc-800" />
+                <div className="relative w-full mx-auto">
+                    <div className="w-full overflow-hidden rounded-xl bg-zinc-900 border border-white/10 shadow-xl relative">
+                        <div className="p-3 flex items-center gap-4 h-20 md:h-24">
+                            <Skeleton className="shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-lg bg-zinc-800" />
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
+                                <Skeleton className="h-4 w-1/3 bg-zinc-800" />
+                                <Skeleton className="h-3 w-1/4 bg-zinc-800 opacity-60" />
+                                <Skeleton className="h-3 w-1/5 bg-zinc-800 opacity-40" />
+                            </div>
                         </div>
                     </div>
+                    {/* Internal Player Button Skeleton */}
+                    <div className="absolute top-1/2 -translate-y-1/2 right-4 z-10 p-2 bg-white/5 rounded-full border border-white/5">
+                        <Skeleton className="w-5 h-5 rounded-full bg-zinc-800" />
+                    </div>
                 </div>
-            </div>
-        );
-    }
-
-    if (error || !lyricsData) {
-        const safeSongInfo = {
-            name: "无法加载",
-            artist: ["未知"],
-            album: "",
-        };
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-transparent p-0">
-                <SongCard
-                    id={id}
-                    provider={provider}
-                    coverUrl=""
-                    songInfo={safeSongInfo}
-                />
             </div>
         );
     }
